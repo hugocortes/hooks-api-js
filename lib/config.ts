@@ -1,11 +1,33 @@
 import * as hapi from 'hapi';
 import * as dotenv from 'dotenv';
 
+import * as pkg from '../package.json';
+
 dotenv.config();
 
-const { HOST, PORT } = process.env;
+const {
+  HOST,
+  PORT,
+  LOG_LEVEL,
 
-const plugins = [];
+  REDIS_HOST,
+  REDIS_PORT,
+  REDIS_AUTH,
+  REDIS_KEY,
+} = process.env;
+
+const plugins = [
+  /** Server decorations */
+  {
+    plugin: './decorator',
+    options: {
+      serverOpts: {
+        level: LOG_LEVEL,
+        label: pkg.name,
+      },
+    },
+  },
+];
 
 const glueOpts = {
   relativeTo: `${__dirname}/modules`,
@@ -15,7 +37,21 @@ const manifestOpts = {
   server: {
     host: HOST,
     port: PORT,
-    // cache: [],
+    cache: [
+      {
+        name: 'redisCache',
+        provider: {
+          constructor: require('catbox-redis'),
+          options: {
+            default: true,
+            host: REDIS_HOST,
+            port: REDIS_PORT,
+            password: REDIS_AUTH,
+            partition: REDIS_KEY,
+          },
+        },
+      },
+    ],
     routes: {
       cors: {
         origin: ['*'],
